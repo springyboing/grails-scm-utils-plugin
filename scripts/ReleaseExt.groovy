@@ -1,60 +1,108 @@
-import org.tmatesoft.svn.core.SVNAuthenticationException
-
 includeTargets << grailsScript("_GrailsEvents")
+includeTargets << grailsScript("_GrailsArgParsing")
+
+// http://semver.org/
+
 
 target(default: "The description of the script goes here!") {
-    // TODO: Implement script here
+    depends(parseArguments)
 
-    // find branch name if applicable
-    def branchName = ''
+    def oldVersion = currentVersion()
+    println "CurrentVersion: " +  oldVersion
 
-    currentVersion()
-    updateVersion()
+    if (argsMap.release) {
+         release = true
+    }
+    if (argsMap.major) {
+        releaseMajor = true
+    } else if (argsMap.minor) {
+        releaseMinor = true
+    } else if (argsMap.patch) {
+        releasePatch = true
+    }
+
+    if (argsMap.branch) {
+        includeBranch = true
+    }
+    if (argsMap.ignoreMaster) {
+        ignoreTrunkMaster = true
+    }
+    if (argsMap.scm) {
+        scmSystem = argsMap.scm
+    }
+
+    println "NextVersion: " +  nextVersion(oldVersion)
+    if (!dryRun) {
+     //   updateVersion()
+    }
 }
 
 target(release: "Removes Snapshot from version") {
-
 }
 
-minor = true
+dryRun = true
+scmSystem = 'git'
+
+major = null
+minor = null
+patch = null
+remaining = null
+
+releaseMajor = false
+releaseMinor = false
+releasePatch = false
+
 release = false
 includeBranch = true
+ignoreTrunkMaster = false
 
 def nextVersion(version) {
 
-    if (minor) {
-        version = nextMinorVersion(version)
-    } else {
-        version = nextMajorVersion(version)
+    def versionMatcher = (version =~ /(\d?)(?:\.(\d))?(?:\.(\d))?.*/)
+    major = versionMatcher[0][1]
+    minor = versionMatcher[0][2]
+    patch = versionMatcher[0][3]
+    remaining = versionMatcher[0][4]
+    println "Major: " + major
+    println "Minor: " + minor
+    println "Patch: " + patch
+    println "Remaining: " + remaining
+
+//    println "Major: " + nextMajorVersion(major, minor, patch, remaining)
+//    println "Minor: " + nextMinorVersion(major, minor, patch, remaining)
+//    println "Patch: " + nextPatchVersion(major, minor, patch, remaining)
+
+    if (releaseMajor) {
+        version = nextMajorVersion(major, minor, patch, remaining)
+    } else if (releaseMinor) {
+        version = nextMinorVersion(major, minor, patch, remaining)
+    } else if (releasePatch) {
+        version = nextPatchVersion(major, minor, patch, remaining)
     }
+
     if (release) {
         version = unsnapshotVersion(version)
     } else {
         version = snapshotVersion(version)
     }
     if (includeBranch) {
-        //version = branchVersion(version, "master")
-        println "master: " + branchVersion(version, "master")
-        println "trunk: " + branchVersion(version, "trunk")
-        println "fix-23-poo: " + branchVersion(version, "fix-23-poo")
-        println "fix-23-poo: " + branchVersion("1.3-fix-100-poo", "fix-23-poo")
-        println "fix-23-poo: " + branchVersion("1.3-fix-100-poo-SNAPSHOT", "fix-23-poo")
+        def branch = getBranch()
+        version = branchVersion(version, branch)
     }
+    return version
 }
 
-def nextMinorVersion(version) {
-    def versionMatcher = (version =~ /[\d\.]*/)
-    def numericVersion =  versionMatcher[0]
-    numericVersion = ++numericVersion
-    version = versionMatcher.replaceFirst(numericVersion)
-    return version
+def nextMajorVersion(major, minor, patch, remaining) {
+    def next = ++(major as Integer)
+    return "${next}.0.0${remaining ?: ''}"
 }
-def nextMajorVersion(version) {
-    def versionMatcher = (version =~ /[\d\.]*/)
-    def numericVersion =  versionMatcher[0]
-    numericVersion = ++(numericVersion as Integer)
-    version = versionMatcher.replaceFirst(numericVersion)
-    return version
+def nextMinorVersion(major, minor, patch, remaining) {
+    def next = ++(minor as Integer)
+    return "${major}.${next}.0${remaining ?: ''}"
+}
+def nextPatchVersion(major, minor, patch, remaining) {
+    def next = ++(patch as Integer)
+    return "${major}.${minor}.${next}${remaining ?: ''}"
 }
 def snapshotVersion(version) {
     def snapshotMatcher = (version =~ /-SNAPSHOT/)
@@ -86,30 +134,26 @@ def unbranchVersion(version) {
 }
 def branchVersion(version, branch) {
 
-    println "Branch [${branch}]: " + (branch =~ /master|trunk/).matches()
-    // if using svn or git strip the branch name.
-    branch = (branch =~ /master|trunk/).matches() ? '' : "-${branch}"
+    println "Branch [${branch}]: "
 
-    println "Orignal Version: " + version
+    // if using svn or git strip the branch name.
+    if (ignoreTrunkMaster) {
+        branch = (branch =~ /master|trunk/).matches() ? '' : branch
+    }
+
     def strippedSnapshot = unsnapshotVersion(version)
-    println "strippedSnapshot: " + strippedSnapshot
     def applySnapshotBack = strippedSnapshot != version
-    println "applySnapshotBack: " + applySnapshotBack
     def branchMatcher = (strippedSnapshot =~ /-[\w\d-]*/)
     if (branchMatcher.count != 0) {
-        println "I match existing branch : " + branchMatcher[0]
-        strippedSnapshot = branchMatcher.replaceFirst("")
+         strippedSnapshot = branchMatcher.replaceFirst("")
     }
-    version = strippedSnapshot + branch
+    version = strippedSnapshot + (branch ? '-' + branch : '')
 
     if (applySnapshotBack) {
          version += '-SNAPSHOT'
     }
-
     return version
 }
-
-
 
 def updateVersion() {
     if (isPluginProject) {
@@ -132,7 +176,7 @@ def updatePluginVersion() {
 
     String oldVersion = ''
     if (matcher.size() > 0) {
-        oldVersion = matcher[0][0]
+        oldVersion = matcher[0][1]
     }
 
     String newVersion = nextVersion(oldVersion)
@@ -158,11 +202,10 @@ def updateApplicationVersion() {
 }
 def currentVersion() {
     if (isPluginProject) {
-        println "Plugin version: " + pluginVersion()
+        return pluginVersion()
     } else {
-        println "Application version: " + applicationVersion()
+        return applicationVersion()
     }
-
 }
 
 def applicationVersion() {
@@ -177,7 +220,30 @@ def pluginVersion() {
 
     String oldVersion = ''
     if (matcher.size() > 0) {
-        oldVersion = matcher[0][0]
+        oldVersion = matcher[0][1]
     }
     return oldVersion
+}
+
+def getBranch() {
+    def branch = ''
+    switch(scmSystem) {
+        case 'git':
+            def proc = ['cmd', '/c', 'git', 'branch'].execute()
+            proc.waitForOrKill(3000)
+            branch = proc.text.replaceAll(/\*|\s/, '')
+            break
+        case 'svn':
+            def proc = ['cmd', '/c', 'svn', 'info'].execute()
+            proc.waitForOrKill(3000)
+            branch = proc.text.eachLine { line ->
+                if (line.startsWith('URL:')) {
+
+                    //svn info | grep '^URL:' | egrep -o '(tags|branches)/[^/]+|trunk' | egrep -o '[^/]+$'
+                    //def matcher = (descriptorContent =~ /(tags|branches)\/+|trunk/)
+                }
+            }
+            break
+    }
+    return branch
 }

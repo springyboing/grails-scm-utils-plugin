@@ -13,7 +13,7 @@ eventReleaseEvent = { version, msg ->
 
     scmVersion = version
     scmMsg = msg
-    scmRelease()
+    //scmRelease()
 }
 
 eventSnapshotReleaseEvent = { version, msg ->
@@ -21,7 +21,7 @@ eventSnapshotReleaseEvent = { version, msg ->
 
     scmVersion = version
     scmMsg = msg
-    scmSnapshotRelease()
+    //scmSnapshotRelease()
 }
 
 def isGitScm() {
