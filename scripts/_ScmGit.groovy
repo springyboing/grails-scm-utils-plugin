@@ -61,7 +61,7 @@ def push() {
 }
 def branchName() {
     def output = executeCmd(osCmdWrapper(['git', 'branch']))
-    return output.replaceAll(/\*|\s/, '')
+    return output.find(/\*\s(.*)/) { matcher, value -> value }
 }
 def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
     def proc = cmd.execute()

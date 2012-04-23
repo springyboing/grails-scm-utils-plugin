@@ -1,8 +1,5 @@
-import org.apache.commons.lang.SystemUtils
-
 includeTargets << grailsScript("_GrailsEvents")
 includeTargets << grailsScript("_GrailsArgParsing")
-//includeTargets << new File("$scmUtilsPluginDir/scripts/_Scm.groovy")
 
 // http://semver.org/
 
@@ -24,56 +21,39 @@ target(default: "The description of the script goes here!") {
         releasePatch = true
     }
 
-    if (argsMap.'hideBranch') {
-        includeBranch = false
-    }
-    if (argsMap.'includeMaster') {
-        ignoreTrunkMaster = false
-    }
-    if (argsMap.scm) {
-        scmSystem = argsMap.scm
-    }
-
-    event("IncludeBranchEvent", [])
-    println "ReleaseExt: " + branchN
-
     def oldVersion = currentVersion()
-    println "CurrentVersion: " +  oldVersion
-    def nextVersion = nextVersion(oldVersion)
-    println "NextVersion: " +  nextVersion
-    
+    event("ReleaseCurrentVersionEvent", [oldVersion])
+
+    theNextVersion = nextVersion(oldVersion)
+    event("ReleaseNextVersionEvent", [theNextVersion])
+
     if (!dryRun) {
-        updateVersion(nextVersion)
+        event("ReleaseUpdateVersionStartEvent", [theNextVersion])
+        updateVersion(theNextVersion)
     }
+
+    event("ReleaseCompletedEvent", [])
 }
 
 target(release: "Removes Snapshot from version") {
 }
 
 dryRun = false
-scmSystem = 'svn'
-
-major = null
-minor = null
-patch = null
-remaining = null
-branchN = 'xXx'
 
 releaseMajor = false
 releaseMinor = false
 releasePatch = false
-
 release = false
-includeBranch = true
-ignoreTrunkMaster = true
+
+theNextVersion = 'n/a'
 
 def nextVersion(version) {
 
     def versionMatcher = (version =~ /(\d*)(?:\.(\d*))?(?:\.(\d*))?(.*)/)
-    major = versionMatcher[0][1]
-    minor = versionMatcher[0][2]
-    patch = versionMatcher[0][3]
-    remaining = versionMatcher[0][4]
+    def major = versionMatcher[0][1]
+    def minor = versionMatcher[0][2]
+    def patch = versionMatcher[0][3]
+    def remaining = versionMatcher[0][4]
     println "Major: " + major
     println "Minor: " + minor
     println "Patch: " + patch
@@ -90,11 +70,8 @@ def nextVersion(version) {
     if (release) {
         version = unsnapshotVersion(version)
     } else {
+        version = nextPatchVersion(major, minor, patch, remaining)
         version = snapshotVersion(version)
-    }
-    if (includeBranch) {
-//        def branch = getBranch()
-        version = branchVersion(version, branchN)
     }
     return version
 }
@@ -115,6 +92,7 @@ def snapshotVersion(version) {
     def snapshotMatcher = (version =~ /-SNAPSHOT/)
     if (!snapshotMatcher.count) {
         version += '-SNAPSHOT'
+        println "Add patch version..."
     }
     return version
 }
@@ -123,44 +101,6 @@ def unsnapshotVersion(version) {
     version = snapshotMatcher.replaceFirst("")
     return version
 }
-def unbranchVersion(version) {
-    def strippedSnapshot = unsnapshotVersion(version)
-    def applySnapshotBack = strippedSnapshot != version
-    def branchMatcher = (strippedSnapshot =~ /-[\w\d-]*/)
-    if (!branchMatcher.count) {
-        strippedSnapshot = branchMatcher.replaceFirst("")
-    }
-    version = strippedSnapshot
-    
-    if (applySnapshotBack) {
-         version += "-SNAPSHOT"
-    }
-
-    return version
-}
-def branchVersion(version, branch) {
-
-    println "Branch [${branch}]: "
-
-    // if using svn or git strip the branch name.
-    if (ignoreTrunkMaster) {
-        branch = (branch =~ /master|trunk/).matches() ? '' : branch
-    }
-
-    def strippedSnapshot = unsnapshotVersion(version)
-    def applySnapshotBack = strippedSnapshot != version
-    def branchMatcher = (strippedSnapshot =~ /-[\w\d-]*/)
-    if (branchMatcher.count != 0) {
-         strippedSnapshot = branchMatcher.replaceFirst("")
-    }
-    version = strippedSnapshot + (branch ? '-' + branch : '')
-
-    if (applySnapshotBack) {
-         version += '-SNAPSHOT'
-    }
-    return version
-}
-
 def updateVersion(newVersion) {
     if (isPluginProject) {
         updatePluginVersion(newVersion)
@@ -216,28 +156,4 @@ def pluginVersion() {
         oldVersion = matcher[0][1]
     }
     return oldVersion
-}
-
-def getBranch() {
-    def branch = ''
-    switch(scmSystem) {
-        case 'git':
-            def proc = osCmdWrapper(['git', 'branch']).execute()
-            proc.waitForOrKill(3000)
-            branch = proc.text.replaceAll(/\*|\s/, '')
-            break
-        case 'svn':
-            def proc = osCmdWrapper(['svn', 'info']).execute()
-            proc.waitForOrKill(9000)
-            def output = proc.text
-            branch = output.find(/URL: .*\/((?:branches|tags)\/[^\/^\s]+|trunk)/) { match, value -> value.find(/[^\/]+$/) }
-    }
-    return branch
-}
-
-def osCmdWrapper(cmd) {
-    if (SystemUtils.IS_OS_WINDOWS) {
-        return  ['cmd', '/c'] + cmd
-    }
-    return cmd
 }
