@@ -5,6 +5,10 @@ includeTargets << grailsScript("_GrailsArgParsing")
 scmVersion = ''
 scmMsg = ''
 scmTag = ''
+scmFiles = ['application.properties', 'ScmUtilsGrailsPlugin.groovy']
+
+scmUsername = (buildConfig.scmutils.username) ?: ''
+scmPassword = (buildConfig.scmutils.password) ?: ''
 
 target(tagRelease: "Tags a release.  A release tag may not overwrite an existing tag") {
     tagRelease(scmTag)
