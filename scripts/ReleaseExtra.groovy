@@ -5,34 +5,23 @@ includeTargets << grailsScript('_GrailsPackage')
 // http://semver.org/
 
 dryRun = false
-
 releaseMajor = false
 releaseMinor = false
 releasePatch = false
-release = false
-
+//release = false
 version = null
-
 
 target(default: "The description of the script goes here!") {
     depends(parseArguments)
 
-    if (argsMap.dryRun) {
-         dryRun = true
-    }
-    if (argsMap.release) {
-         release = true
-    }
-    if (argsMap.major) {
-        releaseMajor = true
-    } else if (argsMap.minor) {
-        releaseMinor = true
-    } else if (argsMap.patch) {
-        releasePatch = true
-    }
+    dryRun = argsMap.dryRun
+    releaseMajor = argsMap.major
+    releaseMinor = argsMap.minor
+    releasePatch = argsMap.patch
+
+    debug()
 
     release()
-
 }
 
 target(release: "Removes Snapshot from version") {
@@ -68,6 +57,12 @@ target(release: "Removes Snapshot from version") {
     }
 
     event("ReleaseComplete", [version])
+}
+def debug() {
+    println "dryRun: " + dryRun
+    println "releaseMajor: " + releaseMajor
+    println "releaseMinor: " + releaseMinor
+    println "releasePatch: " + releasePatch
 }
 
 def incrimentVersion(cVersion) {

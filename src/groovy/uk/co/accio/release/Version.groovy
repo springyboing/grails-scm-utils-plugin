@@ -12,6 +12,12 @@ class Version {
     String tag
     Boolean snapshot
 
+    private Version() {
+    }
+    private Version(String version) {
+        this.originalVersion = version
+    }
+
     static Version parse(String version) {
         def versionMatcher = (version =~ /(\d*)(?:\.(\d*))?(?:\.(\d*))?(.*)/)
         Integer major = versionMatcher[0][1] as Integer
@@ -20,31 +26,63 @@ class Version {
         String remaining = versionMatcher[0][4]
 
         Boolean snapshot = remaining.contains(SNAPSHOT)
-        return new Version(originalVersion: version, major: major, minor: minor, patch: patch, remaining: remaining, snapshot: snapshot)
+        def versionObj = new Version(version)
+        versionObj.major = major
+        versionObj.minor = minor
+        versionObj.patch = patch
+        versionObj.tag = ''
+        versionObj.snapshot = snapshot
+        return versionObj
     }
 
     Version nextMajorVersion() {
-        return new Version()
+        def version = new Version(originalVersion)
+        version.major = this.major + 1
+        version.minor = 0
+        version.patch = 0
+        version.tag = this.tag
+        version.snapshot = this.snapshot
+        return version
     }
 
     Version nextMinorVersion() {
-        return new Version()
+        def version = new Version(this.originalVersion)
+        version.major = this.major
+        version.minor = this.minor + 1
+        version.patch = 0
+        version.tag = this.tag
+        version.snapshot = this.snapshot
+        return version
     }
 
     Version nextPatchVersion() {
-        return new Version()
+        def version = new Version(this.originalVersion)
+        version.major = this.major
+        version.minor = this.minor
+        version.patch = this.patch + 1
+        version.tag = this.tag
+        version.snapshot = this.snapshot
+        return version
     }
 
     Version snapshotVersion() {
-        return new Version()
+        def version = new Version(this.originalVersion)
+        version.major = this.major
+        version.minor = this.minor
+        version.patch = this.patch
+        version.tag = this.tag
+        version.snapshot = true
+        return version
     }
 
     Version releaseVersion() {
-        return new Version()
-    }
-
-    Version withoutTag() {
-        return new Version()
+        def version = new Version(this.originalVersion)
+        version.major = this.major
+        version.minor = this.minor
+        version.patch = this.patch
+        version.tag = this.tag
+        version.snapshot = false
+        return version
     }
 
     String toString() {

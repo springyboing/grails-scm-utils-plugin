@@ -72,8 +72,10 @@ def branchName() {
     def output = executeCmd(['git', 'branch'])
     return output.find(/\*\s(.*)/) { matcher, value -> value }
 }
-def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
+def executeCmd(cmd) {
     cmd = osCmdWrapper(cmd)
+
+    println "DryRun: " + argsMap.dryRun
     println "\texecuteCmd: " + cmd
     def proc = cmd.execute()
     proc.waitFor()

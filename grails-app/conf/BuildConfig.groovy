@@ -17,13 +17,13 @@ grails.project.dependency.resolution = {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
     }
     plugins {
-        build(":tomcat:$grailsVersion",
-                ':release:1.0.0.RC1') {
+        build(':release:1.0.0.RC1') {
             excludes "svn", 'nekohtml'
             export = false
         }
 
         test(':spock:0.5-groovy-1.7')
+//        test ":spock:0.6"
     }
 }
 
