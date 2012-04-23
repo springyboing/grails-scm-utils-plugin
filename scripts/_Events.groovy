@@ -25,7 +25,7 @@ eventReleaseNextVersionEvent = {
     println "### ReleaseNextVersionEvent(Begin) - The next version will be ${it}"
     whichBranch()
     theNextVersion = branchVersion(theNextVersion, branchN)
-    println "### ReleaseNextVersionEvent(End) - The next version will be theNextVersion"
+    println "### ReleaseNextVersionEvent(End) - The next version will be ${theNextVersion}"
 }
 eventReleaseUpdateVersionStartEvent = {
     println "### ReleaseUpdateVersionStartEvent - ${it}"
