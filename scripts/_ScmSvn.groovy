@@ -10,7 +10,7 @@ target(tagRelease: "Tags a release.  A release tag may not overwrite an existing
     tagRelease(scmTag)
 }
 
-target(tagRelease: "Tags a build.  A build tag may overwrite existing tags") {
+target(tagBuild: "Tags a build.  A build tag may overwrite existing tags") {
     tagBuild(scmTag)
 }
 
@@ -66,12 +66,12 @@ def addAndCommit(path, msg) {
 }
 
 def branchName() {
-    def procOut = executeCmd(osCmdWrapper(['svn', 'info']))
+    def procOut = executeCmd(['svn', 'info'])
     return procOut.find(/URL: .*\/((?:branches|tags)\/[^\/^\s]+|trunk)/) { match, value -> value.find(/[^\/]+$/) }
 }
 
 def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
-    def proc = cmd.execute()
+    def proc = osCmdWrapper(cmd.execute())
 	proc.waitForOrKill(timeout)
 
     // Obtain output

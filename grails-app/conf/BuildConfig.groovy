@@ -22,6 +22,8 @@ grails.project.dependency.resolution = {
             excludes "svn", 'nekohtml'
             export = false
         }
+
+        test(':spock:0.5-groovy-1.7')
     }
 }
 

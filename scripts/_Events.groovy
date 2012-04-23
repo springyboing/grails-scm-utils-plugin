@@ -6,16 +6,16 @@ eventReleaseEvent = { version, msg ->
     println "### ReleaseEvent - New version created: ${version}"
 
     scmVersion = version
-    scmMsg = msg
-    //scmRelease()
+    scmMsg = "ReleaseEvent - New version created: ${version}"
+    scmRelease()
 }
 
-eventSnapshotReleaseEvent = { version, msg ->
+eventSnapshotReleaseEvent = { version ->
     println "### SnapshotReleaseEvent - New version created: ${version}"
 
     scmVersion = version
-    scmMsg = msg
-    //scmSnapshotRelease()
+    scmMsg = "SnapshotReleaseEvent - New version created: ${version}"
+    scmSnapshotRelease()
 }
 
 eventReleaseCurrentVersionEvent = {
@@ -23,8 +23,8 @@ eventReleaseCurrentVersionEvent = {
 }
 eventReleaseNextVersionEvent = {
     println "### ReleaseNextVersionEvent(Begin) - The next version will be ${it}"
-    whichBranch()
-    theNextVersion = branchVersion(theNextVersion, branchN)
+//    whichBranch()
+//    theNextVersion = branchVersion(theNextVersion, branchN)
     println "### ReleaseNextVersionEvent(End) - The next version will be ${theNextVersion}"
 }
 eventReleaseUpdateVersionStartEvent = {

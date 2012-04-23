@@ -3,6 +3,14 @@ includeTargets << grailsScript("_GrailsArgParsing")
 
 // http://semver.org/
 
+dryRun = false
+
+releaseMajor = false
+releaseMinor = false
+releasePatch = false
+release = false
+
+theNextVersion = 'n/a'
 
 target(default: "The description of the script goes here!") {
     depends(parseArguments)
@@ -21,31 +29,48 @@ target(default: "The description of the script goes here!") {
         releasePatch = true
     }
 
-    def oldVersion = currentVersion()
-    event("ReleaseCurrentVersionEvent", [oldVersion])
+    release()
 
-    theNextVersion = nextVersion(oldVersion)
-    event("ReleaseNextVersionEvent", [theNextVersion])
-
-    if (!dryRun) {
-        event("ReleaseUpdateVersionStartEvent", [theNextVersion])
-        updateVersion(theNextVersion)
-    }
-
-    event("ReleaseCompletedEvent", [])
+//    def oldVersion = currentVersion()
+//    event("ReleaseCurrentVersionEvent", [oldVersion])
+//
+//    theNextVersion = nextVersion(oldVersion)
+//    event("ReleaseNextVersionEvent", [theNextVersion])
+//
+//    if (!dryRun) {
+//        event("ReleaseUpdateVersionStartEvent", [theNextVersion])
+//        updateVersion(theNextVersion)
+//    }
+//
+//    event("ReleaseCompletedEvent", [])
 }
 
 target(release: "Removes Snapshot from version") {
+
+    // Get the current version
+    def oldVersion = currentVersion()
+    event("ReleaseCurrentVersionEvent", [oldVersion])
+
+    // Get the next version
+    theNextVersion = nextVersion(oldVersion)
+    event("ReleaseNextVersionEvent", [theNextVersion])
+    event("ReleaseEvent", [theNextVersion, ''])
+
+    // Update the current version
+    if (!dryRun) {
+        updateVersion(theNextVersion)
+    }
+//    event("ReleaseEvent", [theNextVersion, "Version " + theNextVersion + " Release"])
+
+    // Get the next version
+    theNextVersion = nextVersion(oldVersion)
+    if (!dryRun) {
+        updateVersion(theNextVersion)
+    }
+//    event("ReleaseNextVersionEvent", [theNextVersion])
+//    event("SnapshotReleaseEvent", [theNextVersion, "Snapshot release for " + theNextVersion])
+//    event("ReleaseCompletedEvent", [])
 }
-
-dryRun = false
-
-releaseMajor = false
-releaseMinor = false
-releasePatch = false
-release = false
-
-theNextVersion = 'n/a'
 
 def nextVersion(version) {
 

@@ -8,13 +8,13 @@ target(tagRelease: "Tags a release.  A release tag may not overwrite an existing
     tagRelease(scmTag)
 }
 
-target(tagRelease: "Tags a build.  A build tag may overwrite existing tags") {
+target(tagBuild: "Tags a build.  A build tag may overwrite existing tags") {
     tagBuild(scmTag)
 }
 
 target(scmRelease: "Commits changed files, release tags and build tags the last release") {
     // Add & Commit
-    addAndCommit('blur.txt', scmMsg)
+    addAndCommit('application.properties', scmMsg)
     // TagRelease
     tagRelease("Release-" + scmVersion)
     tagBuild('last-release')
@@ -22,7 +22,7 @@ target(scmRelease: "Commits changed files, release tags and build tags the last 
 
 target(scmSnapshotRelease: "Commits changed files and build tags the next release") {
     // Add & Commit
-    addAndCommit('blur.txt', scmMsg)
+    addAndCommit('application.properties', scmMsg)
     tagBuild('next-release')
 }
 
@@ -60,15 +60,17 @@ def push() {
     executeCmd(['git', 'push', '--tags'])
 }
 def branchName() {
-    def output = executeCmd(osCmdWrapper(['git', 'branch']))
+    def output = executeCmd(['git', 'branch'])
     return output.find(/\*\s(.*)/) { matcher, value -> value }
 }
 def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
+    cmd = osCmdWrapper(cmd)
+    println "executeCmd: " + cmd
     def proc = cmd.execute()
-	proc.waitForOrKill(timeout)
+    proc.waitFor()
 
     // Obtain output
-    //println "stderr: ${proc.err.text}"
+    println "stderr: ${proc.err.text}"
     //println "stdout: ${proc.in.text}" // *out* from the external program is *in* for groovy
     return proc.text
 }
