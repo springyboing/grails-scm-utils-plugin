@@ -3,6 +3,7 @@ import org.apache.commons.lang.SystemUtils
 scmVersion = ''
 scmMsg = ''
 scmTag = ''
+scmFiles = ['application.properties', 'ScmUtilsGrailsPlugin.groovy']
 
 target(tagRelease: "Tags a release.  A release tag may not overwrite an existing tag") {
     tagRelease(scmTag)
@@ -13,16 +14,24 @@ target(tagBuild: "Tags a build.  A build tag may overwrite existing tags") {
 }
 
 target(scmRelease: "Commits changed files, release tags and build tags the last release") {
-    // Add & Commit
-    addAndCommit('application.properties', scmMsg)
+    // Add then Commit
+    scmFiles.each{ file ->
+        add(file)
+    }
+    commit(scmMsg)
+
     // TagRelease
     tagRelease("Release-" + scmVersion)
     tagBuild('last-release')
 }
 
 target(scmSnapshotRelease: "Commits changed files and build tags the next release") {
-    // Add & Commit
-    addAndCommit('application.properties', scmMsg)
+    // Add then Commit
+    scmFiles.each{ file ->
+        add(file)
+    }
+    commit(scmMsg)
+
     tagBuild('next-release')
 }
 
@@ -65,12 +74,12 @@ def branchName() {
 }
 def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
     cmd = osCmdWrapper(cmd)
-    println "executeCmd: " + cmd
+    println "\texecuteCmd: " + cmd
     def proc = cmd.execute()
     proc.waitFor()
 
     // Obtain output
-    println "stderr: ${proc.err.text}"
+    println "\tstderr: ${proc.err.text}"
     //println "stdout: ${proc.in.text}" // *out* from the external program is *in* for groovy
     return proc.text
 }
@@ -78,5 +87,5 @@ def osCmdWrapper(cmd) {
     if (SystemUtils.IS_OS_WINDOWS) {
         return  ['cmd', '/c'] + cmd
     }
-    return cmd
+    return ['echo'] + cmd
 }

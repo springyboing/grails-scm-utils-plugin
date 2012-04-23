@@ -34,6 +34,34 @@ eventReleaseUpdateVersionEndEvent = {
     println "### ReleaseUpdateVersionEndEvent - ${it}"
 }
 
+
+eventReleaseStart = { version ->
+    println "### eventReleaseStart [${version}]"
+    println "Current version: " + version
+}
+eventReleaseVersionUpdate = { version ->
+    println "### eventReleaseVersionUpdate [${version}]"
+}
+eventReleaseVersionUpdated = { oldVersion, newVersion ->
+    println "### eventReleaseVersionUpdated [${oldVersion} -> ${newVersion}]"
+    scmVersion = version.toString()
+    scmMsg = "Release - New version created: ${version}"
+    if (version.snapshot) {
+        scmMsg = "Release version ${version}"
+        scmRelease()
+    } else {
+        scmMsg = "ReleaseSnapshot version ${version}"
+        scmSnapshotRelease()
+    }
+}
+eventReleaseComplete = { version ->
+    println "### eventReleaseVersionUpdate [${version}]"
+    println "Completed version: " + version
+}
+
+
+
+
 def branchVersion(version, branch) {
 
     // if using svn or git strip the branch name.
