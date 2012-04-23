@@ -1,3 +1,5 @@
+import org.apache.commons.lang.SystemUtils
+
 scmVersion = ''
 scmMsg = ''
 scmTag = ''
@@ -22,6 +24,10 @@ target(scmSnapshotRelease: "Commits changed files and build tags the next releas
     // Add & Commit
     addAndCommit('blur.txt', scmMsg)
     tagBuild('next-release')
+}
+
+target(whichBranch: "Checks your project dir and sets the branch name") {
+    branchN = branchName()
 }
 
 def tagBuild(version) {
@@ -53,11 +59,22 @@ def addAndCommit(path, msg) {
 def push() {
     executeCmd(['git', 'push', '--tags'])
 }
-def executeCmd(cmd) {
+def branchName() {
+    def output = executeCmd(osCmdWrapper(['git', 'branch']))
+    return output.replaceAll(/\*|\s/, '')
+}
+def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
     def proc = cmd.execute()
-	proc.waitFor()
+	proc.waitForOrKill(timeout)
 
     // Obtain output
     //println "stderr: ${proc.err.text}"
     //println "stdout: ${proc.in.text}" // *out* from the external program is *in* for groovy
+    return proc.text
+}
+def osCmdWrapper(cmd) {
+    if (SystemUtils.IS_OS_WINDOWS) {
+        return  ['cmd', '/c'] + cmd
+    }
+    return cmd
 }

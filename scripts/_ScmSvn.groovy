@@ -1,3 +1,5 @@
+import org.apache.commons.lang.SystemUtils
+
 includeTargets << grailsScript("_GrailsArgParsing")
 
 scmVersion = ''
@@ -24,6 +26,10 @@ target(scmSnapshotRelease: "Commits changed files and build tags the next releas
     // Add & Commit
     addAndCommit('blur.txt', scmMsg)
     tagBuild('next-release')
+}
+
+target(whichBranch: "Checks your project dir and sets the branch name") {
+    branchN = branchName()
 }
 
 def tagBuild(version) {
@@ -59,17 +65,28 @@ def addAndCommit(path, msg) {
     commit(msg)
 }
 
-def executeCmd(cmd) {
+def branchName() {
+    def procOut = executeCmd(osCmdWrapper(['svn', 'info']))
+    return procOut.find(/URL: .*\/((?:branches|tags)\/[^\/^\s]+|trunk)/) { match, value -> value.find(/[^\/]+$/) }
+}
+
+def executeCmd(cmd, Long timeout=1000 * 60 * 3) {
     def proc = cmd.execute()
-	proc.waitFor()
+	proc.waitForOrKill(timeout)
 
     // Obtain output
     //println "stderr: ${proc.err.text}"
     //println "stdout: ${proc.in.text}" // *out* from the external program is *in* for groovy
+    return proc.text
+}
+def osCmdWrapper(cmd) {
+    if (SystemUtils.IS_OS_WINDOWS) {
+        return  ['cmd', '/c'] + cmd
+    }
+    return cmd
 }
 
 def getWorkingDir() {
-
     def cmd = ['svn', 'info']
     def process = new ProcessBuilder(cmd).redirectErrorStream(true).start()
     process.inputStream.eachLine {

@@ -1,5 +1,8 @@
+import org.apache.commons.lang.SystemUtils
+
 includeTargets << grailsScript("_GrailsEvents")
 includeTargets << grailsScript("_GrailsArgParsing")
+//includeTargets << new File("$scmUtilsPluginDir/scripts/_Scm.groovy")
 
 // http://semver.org/
 
@@ -7,9 +10,9 @@ includeTargets << grailsScript("_GrailsArgParsing")
 target(default: "The description of the script goes here!") {
     depends(parseArguments)
 
-    def oldVersion = currentVersion()
-    println "CurrentVersion: " +  oldVersion
-
+    if (argsMap.dryRun) {
+         dryRun = true
+    }
     if (argsMap.release) {
          release = true
     }
@@ -21,32 +24,40 @@ target(default: "The description of the script goes here!") {
         releasePatch = true
     }
 
-    if (argsMap.branch) {
-        includeBranch = true
+    if (argsMap.'hideBranch') {
+        includeBranch = false
     }
-    if (argsMap.ignoreMaster) {
-        ignoreTrunkMaster = true
+    if (argsMap.'includeMaster') {
+        ignoreTrunkMaster = false
     }
     if (argsMap.scm) {
         scmSystem = argsMap.scm
     }
 
-    println "NextVersion: " +  nextVersion(oldVersion)
+    event("IncludeBranchEvent", [])
+    println "ReleaseExt: " + branchN
+
+    def oldVersion = currentVersion()
+    println "CurrentVersion: " +  oldVersion
+    def nextVersion = nextVersion(oldVersion)
+    println "NextVersion: " +  nextVersion
+    
     if (!dryRun) {
-     //   updateVersion()
+        updateVersion(nextVersion)
     }
 }
 
 target(release: "Removes Snapshot from version") {
 }
 
-dryRun = true
-scmSystem = 'git'
+dryRun = false
+scmSystem = 'svn'
 
 major = null
 minor = null
 patch = null
 remaining = null
+branchN = 'xXx'
 
 releaseMajor = false
 releaseMinor = false
@@ -54,11 +65,11 @@ releasePatch = false
 
 release = false
 includeBranch = true
-ignoreTrunkMaster = false
+ignoreTrunkMaster = true
 
 def nextVersion(version) {
 
-    def versionMatcher = (version =~ /(\d?)(?:\.(\d))?(?:\.(\d))?.*/)
+    def versionMatcher = (version =~ /(\d*)(?:\.(\d*))?(?:\.(\d*))?(.*)/)
     major = versionMatcher[0][1]
     minor = versionMatcher[0][2]
     patch = versionMatcher[0][3]
@@ -67,10 +78,6 @@ def nextVersion(version) {
     println "Minor: " + minor
     println "Patch: " + patch
     println "Remaining: " + remaining
-
-//    println "Major: " + nextMajorVersion(major, minor, patch, remaining)
-//    println "Minor: " + nextMinorVersion(major, minor, patch, remaining)
-//    println "Patch: " + nextPatchVersion(major, minor, patch, remaining)
 
     if (releaseMajor) {
         version = nextMajorVersion(major, minor, patch, remaining)
@@ -86,8 +93,8 @@ def nextVersion(version) {
         version = snapshotVersion(version)
     }
     if (includeBranch) {
-        def branch = getBranch()
-        version = branchVersion(version, branch)
+//        def branch = getBranch()
+        version = branchVersion(version, branchN)
     }
     return version
 }
@@ -121,7 +128,6 @@ def unbranchVersion(version) {
     def applySnapshotBack = strippedSnapshot != version
     def branchMatcher = (strippedSnapshot =~ /-[\w\d-]*/)
     if (!branchMatcher.count) {
-        println "I match existing branch: " + branchMatcher[0]
         strippedSnapshot = branchMatcher.replaceFirst("")
     }
     version = strippedSnapshot
@@ -155,18 +161,14 @@ def branchVersion(version, branch) {
     return version
 }
 
-def updateVersion() {
+def updateVersion(newVersion) {
     if (isPluginProject) {
-        updatePluginVersion()
+        updatePluginVersion(newVersion)
     } else {
-        updateApplicationVersion()
+        updateApplicationVersion(newVersion)
     }
 }
-def updatePluginVersion() {
-    if (!pluginSettings.basePluginDescriptor.filename) {
-        grailsConsole.error "PluginDescripter not found to set version"
-        exit 1
-    }
+def updatePluginVersion(newVersion) {
 
     File file = new File(pluginSettings.basePluginDescriptor.filename)
     String descriptorContent = file.text
@@ -174,12 +176,6 @@ def updatePluginVersion() {
     def pattern = ~/def\s*version\s*=\s*"(.*)"/
     def matcher = (descriptorContent =~ pattern)
 
-    String oldVersion = ''
-    if (matcher.size() > 0) {
-        oldVersion = matcher[0][1]
-    }
-
-    String newVersion = nextVersion(oldVersion)
     String newVersionString = "def version = \"${newVersion}\""
 
     if (matcher.size() > 0) {
@@ -192,10 +188,7 @@ def updatePluginVersion() {
     file.withWriter { it.write descriptorContent }
     event("StatusFinal", ["Plugin version updated to $newVersion"])
 }
-def updateApplicationVersion() {
-
-    def oldVersion = metadata.'app.version'
-    String newVersion = nextVersion(oldVersion)
+def updateApplicationVersion(newVersion) {
     metadata.'app.version' = newVersion
     metadata.persist()
     event("StatusFinal", ["Application version updated to $newVersion"])
@@ -229,21 +222,22 @@ def getBranch() {
     def branch = ''
     switch(scmSystem) {
         case 'git':
-            def proc = ['cmd', '/c', 'git', 'branch'].execute()
+            def proc = osCmdWrapper(['git', 'branch']).execute()
             proc.waitForOrKill(3000)
             branch = proc.text.replaceAll(/\*|\s/, '')
             break
         case 'svn':
-            def proc = ['cmd', '/c', 'svn', 'info'].execute()
-            proc.waitForOrKill(3000)
-            branch = proc.text.eachLine { line ->
-                if (line.startsWith('URL:')) {
-
-                    //svn info | grep '^URL:' | egrep -o '(tags|branches)/[^/]+|trunk' | egrep -o '[^/]+$'
-                    //def matcher = (descriptorContent =~ /(tags|branches)\/+|trunk/)
-                }
-            }
-            break
+            def proc = osCmdWrapper(['svn', 'info']).execute()
+            proc.waitForOrKill(9000)
+            def output = proc.text
+            branch = output.find(/URL: .*\/((?:branches|tags)\/[^\/^\s]+|trunk)/) { match, value -> value.find(/[^\/]+$/) }
     }
     return branch
+}
+
+def osCmdWrapper(cmd) {
+    if (SystemUtils.IS_OS_WINDOWS) {
+        return  ['cmd', '/c'] + cmd
+    }
+    return cmd
 }

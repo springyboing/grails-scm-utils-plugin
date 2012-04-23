@@ -26,4 +26,4 @@ grails.project.dependency.resolution = {
 }
 
 // Alternative project root so we can find .svn or .git folder to identify SCM.
-// scmutils.rootDir = '/Users/timredding/Documents/projects/Text-Vault/'
+//scmutils.rootDir = 'trunk'
