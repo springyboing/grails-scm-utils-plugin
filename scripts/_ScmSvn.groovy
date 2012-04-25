@@ -10,11 +10,11 @@ scmFiles = ['application.properties', 'ScmUtilsGrailsPlugin.groovy']
 scmUsername = (buildConfig.scmutils.username) ?: ''
 scmPassword = (buildConfig.scmutils.password) ?: ''
 
-target(tagRelease: "Tags a release.  A release tag may not overwrite an existing tag") {
+target(tagRelease: "Tags a release.  A release label may not overwrite an existing label") {
     tagRelease(scmTag)
 }
 
-target(tagBuild: "Tags a build.  A build tag may overwrite existing tags") {
+target(tagBuild: "Tags a build.  A build label may overwrite existing tags") {
     tagBuild(scmTag)
 }
 

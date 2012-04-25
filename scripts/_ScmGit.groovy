@@ -5,11 +5,11 @@ scmMsg = ''
 scmTag = ''
 scmFiles = ['application.properties', 'ScmUtilsGrailsPlugin.groovy']
 
-target(tagRelease: "Tags a release.  A release tag may not overwrite an existing tag") {
+target(tagRelease: "Tags a release.  A release label may not overwrite an existing label") {
     tagRelease(scmTag)
 }
 
-target(tagBuild: "Tags a build.  A build tag may overwrite existing tags") {
+target(tagBuild: "Tags a build.  A build label may overwrite existing tags") {
     tagBuild(scmTag)
 }
 
@@ -40,7 +40,7 @@ target(whichBranch: "Checks your project dir and sets the branch name") {
 }
 
 def tagBuild(version) {
-    executeCmd("git tag -d ${version}")
+    executeCmd("git label -d ${version}")
     tag(version)
 }
 
@@ -49,7 +49,7 @@ def tagRelease(version) {
 }
 
 def tag(version) {
-    executeCmd(['git', 'tag', version])
+    executeCmd(['git', 'label', version])
 }
 
 def add(path) {

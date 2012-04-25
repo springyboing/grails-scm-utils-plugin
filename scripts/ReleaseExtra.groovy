@@ -36,8 +36,8 @@ target(release: "Removes Snapshot from version") {
 
     if (version.snapshot) {     // if SNAPSHOT
         version = version.releaseVersion() // Remove snapshot label
-        event("ReleaseVersionUpdate", [version])    // Listener can add tag to version
-        //  SCM Branch gets added as a version tag via an event listener...
+        event("ReleaseVersionUpdate", [version])    // Listener can add label to version
+        //  SCM Branch gets added as a version label via an event listener...
         updateVersion(version.toString())
         event("ReleaseVersionUpdated", [oldVersion, version])   // Listener saves version change
     }
@@ -50,8 +50,8 @@ target(release: "Removes Snapshot from version") {
 
         version = incrimentVersion(version) // Incriment for next release
         version = version.snapshotVersion() // Add SNAPSHOT to version label
-        event("ReleaseVersionUpdate", [version, ])    // Listener can add tag to version
-        //  SCM Branch gets added as a version tag via an event listener...
+        event("ReleaseVersionUpdate", [version, ])    // Listener can add label to version
+        //  SCM Branch gets added as a version label via an event listener...
         updateVersion(version.toString())
         event("ReleaseVersionUpdated", [oldVersion, version])   // Listener saves version change
     }
